@@ -28,7 +28,7 @@ public class GraphiteMetricsBuilder {
     }
 
     public void add(String name, String value, Instant timestamp) {
-        builder.append(String.format(Locale.US, "%s %s %d\n", name, value, timestamp.toEpochMilli()));
+        builder.append(String.format(Locale.US, "%s %s %d\n", name, value, timestamp.toEpochMilli() / 1000));
     }
 
     public void add(String name, long value, Instant timestamp) {

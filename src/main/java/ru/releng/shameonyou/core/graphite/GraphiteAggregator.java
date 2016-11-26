@@ -17,13 +17,19 @@
 package ru.releng.shameonyou.core.graphite;
 
 import com.github.racc.tscg.TypesafeConfig;
+import com.samskivert.mustache.Mustache;
+import com.samskivert.mustache.Template;
 import org.HdrHistogram.Histogram;
 import ru.releng.shameonyou.core.Aggregator;
 import ru.releng.shameonyou.core.Stats;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.time.Instant;
+import java.util.HashMap;
+import java.util.Map;
 
 @Singleton
 public class GraphiteAggregator implements Aggregator {
@@ -34,7 +40,7 @@ public class GraphiteAggregator implements Aggregator {
     @Inject
     public GraphiteAggregator(GraphiteClient graphiteClient, @TypesafeConfig("graphite.prefix") String graphitePrefix) {
         this.graphiteClient = graphiteClient;
-        this.graphitePrefix = graphitePrefix;
+        this.graphitePrefix = preparePrefix(graphitePrefix);
     }
 
     @Override
@@ -69,6 +75,22 @@ public class GraphiteAggregator implements Aggregator {
 
     private String metricName(String key, String name) {
         return graphitePrefix + key + "." + name;
+    }
+
+    private static String preparePrefix(String graphitePrefix) {
+        Template prefixTemplate = Mustache.compiler().compile(graphitePrefix);
+        Map<String, String> templateVariables = new HashMap<>();
+        templateVariables.put("hostname", getHostName());
+        String appliedTemplate = prefixTemplate.execute(templateVariables);
+        return appliedTemplate.endsWith(".") ? appliedTemplate : appliedTemplate + ".";
+    }
+
+    private static String getHostName() {
+        try {
+            return InetAddress.getLocalHost().getHostName().replace('.', '_');
+        } catch (UnknownHostException e) {
+            return "hostname";
+        }
     }
 
 }
